@@ -1,5 +1,4 @@
----
-description: Execute the implementation plan by processing and executing all tasks defined in tasks.md
+description: Execute the implementation plan by processing and executing tasks from tasks.md. Supports optional single-task mode via argument (e.g., "T016").
 ---
 
 The user input can be provided directly by the agent or as a command argument - you **MUST** consider it before proceeding with the prompt (if not empty).
@@ -24,8 +23,18 @@ $ARGUMENTS
    - **Task details**: ID, description, file paths, parallel markers [P]
    - **Execution flow**: Order and dependency requirements
 
+3a. Task selection mode (optional):
+   - If `$ARGUMENTS` is non-empty, treat it as the target task selector `TARGET_TASK_ID`.
+   - Expected format: exact task ID (e.g., `T016`). Reject empty or malformed selectors.
+   - Validate the task exists in tasks.md. If not found, abort with a clear error listing available task IDs.
+   - Read the task's "Dependency:" line. If `None`, proceed. Otherwise, parse dependency IDs (comma/space separated).
+   - For each dependency ID, locate its task and verify it is marked as completed with `[X]`.
+     * If any dependency is not completed, ABORT with a failure message: include the blocking task IDs and their descriptions. Do not attempt to auto-run dependencies in single-task mode.
+   - When in single-task mode, you MUST only execute the selected task and skip all others.
+
 4. Execute implementation following the task plan:
-   - **Phase-by-phase execution**: Complete each phase before moving to the next
+   - **Single-task mode**: If `TARGET_TASK_ID` is set, execute ONLY that task. Do not run unrelated tasks or future phases. After successful completion, mark ONLY this task as completed `[X]`.
+   - **Phase-by-phase execution**: If no `TARGET_TASK_ID`, complete each phase before moving to the next
    - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
    - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
    - **File-based coordination**: Tasks affecting the same files must run sequentially
@@ -45,9 +54,11 @@ $ARGUMENTS
    - Provide clear error messages with context for debugging
    - Suggest next steps if implementation cannot proceed
    - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+   - In single-task mode, if dependencies are incomplete, FAIL fast with a message: "Task <TARGET_TASK_ID> is blocked by <LIST>. Complete these first or run /implement without a target."
 
 7. Completion validation:
-   - Verify all required tasks are completed
+   - If in single-task mode: Verify the selected task is completed and consistent with its acceptance criteria
+   - If running full plan: Verify all required tasks are completed
    - Check that implemented features match the original specification
    - Validate that tests pass and coverage meets requirements
    - Confirm the implementation follows the technical plan
