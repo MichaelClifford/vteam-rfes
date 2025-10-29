@@ -3,6 +3,11 @@
     "context7": {
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
-    }
-  }
+    },
+    "local-tool": {
+        "type": "stdio",
+        "command": "python",
+        "args": ["server.py"]
+      }
+   }
 }
